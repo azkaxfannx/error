@@ -138,9 +138,9 @@
         public static function checkUser() {
             if(isset($_SESSION['user'])) {
                 return true;
+            } else {
+                return false;
             }
-    
-            return false;
         }
 
         public static function rejectUser() {
@@ -202,24 +202,53 @@
 
     class Pegawai {
         public static function validasiTambahDataPegawai($listDBPegawai) {
-            if (isset($_POST['submitDataPegawai'])) {
+            $nikTerdaftar = [];
+            if (isset($_POST['submitDataPegawai']) && isset($_SESSION['selectedDatabase'])) {
                 $tampilForm = false;
-                
-                if(isset($_SESSION['selectedDatabase'])) {
-                    if (!empty($_POST['golongan']) && !empty(array_filter($_POST))) {
-                        self::tambahDataPegawai($listDBPegawai);
-    
-                        echo "<script>alert('Data pegawai berhasil dikirim!')</script>";
+                $path = $listDBPegawai . $_SESSION['selectedDatabase'];
+                $database = fopen($path, 'r');
+                $nik = $_POST['nik'];
 
-                        unset($_SESSION['selectedDatabase'], $_SESSION['status']);
-                    } else {
-                        echo "<script>alert('Gagal! Ada data yang belum diisi!')</script>";
+                $isEmpty = true;
+                $arrData = [];
+                $i = 0;
+                while(!feof($database)) {
+                    $arrData[$i] = trim(fgets($database));
+                    if(!empty($arrData[$i])) {
+                        $isEmpty = false;
                     }
-                } else {
-                    echo "<script>alert('Database belum dipilih!')</script>";
+                    $i++;
+                }
+
+                fclose($database);
+            
+                if(!$isEmpty) {
+                    foreach($arrData as $isiDB) {
+                        if(!empty($isiDB)) {
+                            $dataPegawai = explode(',', $isiDB);
+                            $nikTerdaftar[] = $dataPegawai[0];
+                        }
+                    }
+                }
+                    if(!in_array($nik, $nikTerdaftar)) {
+                        if(isset($_SESSION['selectedDatabase'])) {
+                            if (!empty($_POST['golongan']) && !empty(array_filter($_POST))) {
+                                self::tambahDataPegawai($listDBPegawai);
+            
+                                echo "<script>alert('Data pegawai berhasil dikirim!')</script>";
+
+                                unset($_SESSION['selectedDatabase'], $_SESSION['status']);
+                            } else {
+                                echo "<script>alert('Gagal! Ada data yang belum diisi!')</script>";
+                            }
+                        } else {
+                            echo "<script>alert('Database belum dipilih!')</script>";
+                        }
+                    } else {
+                        echo "<script>alert('NIK sudah terdaftar di database!')</script>";
+                    }
                 }
             }
-        }
         
         public static function tambahDataPegawai($listDBPegawai) {
             $database = $listDBPegawai . $_SESSION['selectedDatabase'];
@@ -246,11 +275,11 @@
 
             $pegawaiCSV = implode(',', $dataPegawai);
 
-            $simpan = fopen($database, 'a');
+            $file = fopen($database, 'a');
         
-            fwrite($simpan, $pegawaiCSV . PHP_EOL);
+            fwrite($file, $pegawaiCSV . PHP_EOL);
 
-            fclose($simpan);
+            fclose($file);
         }
 
         public static function hapusDataPegawai($listDBPegawai) {
@@ -280,16 +309,24 @@
             if(isset($_POST['ubahDataPegawai']) && isset($_SESSION['selectedNIK'])) {
                 $selectedNIK = $_SESSION['selectedNIK'];
                 $database = $listDBPegawai . $_SESSION['selectedDatabase'];
-                $path = file($database);
+                $file = fopen($database, 'r+');
                 
                 $dataPegawai = null;
-                foreach($path as $db) {
+                $posisiData = 0;
+
+                while (!feof($file)) {
+                    $db = trim(fgets($file));
                     $pegawai = explode(',', $db);
-                    if($pegawai[0] == $selectedNIK) {
+        
+                    if ($pegawai[0] == $selectedNIK) {
                         $dataPegawai = $pegawai;
+                        $posisiData = ftell($file);
                         break;
                     }
                 }
+
+                fclose($file);
+
                 if($dataPegawai) {
                     echo "<form method='post'>";
                         echo "<input type='number' name='nik' placeholder='NIK' value='$dataPegawai[0]' required>";
@@ -305,19 +342,19 @@
                         echo "<input type='radio' name='golongan' value='IV-A'" . ($dataPegawai[4] == 'IV-A' ? 'checked' : '') . ">";
                         echo "<label for='IV-A'>IV-A</label>";
                         echo "<br>";
-                        echo "<input type='radio' name='golongan' value='IV-A'" . ($dataPegawai[4] == 'IV-B' ? 'checked' : '') . ">";
+                        echo "<input type='radio' name='golongan' value='IV-B'" . ($dataPegawai[4] == 'IV-B' ? 'checked' : '') . ">";
                         echo "<label for='IV-B'>IV-B</label>";
                         echo "<br>";
-                        echo "<input type='radio' name='golongan' value='IV-A'" . ($dataPegawai[4] == 'IV-C' ? 'checked' : '') . ">";
+                        echo "<input type='radio' name='golongan' value='IV-C'" . ($dataPegawai[4] == 'IV-C' ? 'checked' : '') . ">";
                         echo "<label for='IV-C'>IV-C</label>";
                         echo "<br>";
-                        echo "<input type='radio' name='golongan' value='IV-A'" . ($dataPegawai[4] == 'III-A' ? 'checked' : '') . ">";
+                        echo "<input type='radio' name='golongan' value='III-A'" . ($dataPegawai[4] == 'III-A' ? 'checked' : '') . ">";
                         echo "<label for='III-A'>III-A</label>";
                         echo "<br>";
-                        echo "<input type='radio' name='golongan' value='IV-A'" . ($dataPegawai[4] == 'III-B' ? 'checked' : '') . ">";
+                        echo "<input type='radio' name='golongan' value='III-B'" . ($dataPegawai[4] == 'III-B' ? 'checked' : '') . ">";
                         echo "<label for='III-B'>III-B</label>";
                         echo "<br>";
-                        echo "<input type='radio' name='golongan' value='IV-A'" . ($dataPegawai[4] == 'III-C' ? 'checked' : '') . ">";
+                        echo "<input type='radio' name='golongan' value='III-C'" . ($dataPegawai[4] == 'III-C' ? 'checked' : '') . ">";
                         echo "<label for='III-C'>III-C</label>";
                         echo "<br><br>";
                         echo "<input type='number' name='jumlahAnak' placeholder='Jumlah Anak' value='$dataPegawai[5]' required>";
@@ -330,6 +367,8 @@
                     echo "</form>";
                 }
                 if(isset($_POST['submitUbahDataPegawai'])) {
+                    echo "<script>alert('Data pegawai berhasil diubah!')</script>";
+
                     $newNik = $_POST['nik'];
                     $newName = $_POST['nama'];
                     $newAlamat = $_POST['alamat'];
@@ -353,19 +392,9 @@
                     $newDataCSV = implode(',', $newDataPegawai);
 
                     $file = fopen($database, 'r+');
-
-                    $posisiData = 0;
-                    foreach($path as $index => $db) {
-                        if(strpos($db, $selectedNIK) === 0) {
-                            $posisiData = $index;
-                            break;
-                        }
-                    }
                     fseek($file, $posisiData);
                     fwrite($file, $newDataCSV . PHP_EOL);
                     fclose($file);
-
-                    echo "<script>alert('Data pegawai berhasil diubah!')</script>";
                 }
             }
         }
