@@ -8,6 +8,7 @@
     UserFunction::rejectUser();
     Fiture::balikDashboard();
     Pegawai::validasiTambahDataPegawai($listDBPegawai);
+    Pegawai::hapusDataPegawai($listDBPegawai);
 ?>
 
 <!DOCTYPE html>
@@ -43,8 +44,6 @@
     <br><br>
         <h3>Tambah Data Pegawai</h3>
         <form method="post">
-            <input type="hidden" name="pilihDatabase" value="<?= $_SESSION['selectedDatabase']; ?>">
-            <input type="hidden" name="status" value="<?= $_SESSION['status']; ?>">
             <input type="number" name="nik" placeholder="NIK" required>
             <br><br>
             <input type="text" name="nama" placeholder="Nama" required>
@@ -82,6 +81,8 @@
             <button type="submit" name="submitDataPegawai">Kirim Data Pegawai!</button>
         </form>
     <?php endif; ?>
+    <br><br>
+        <?php Pegawai::ubahDataPegawai($listDBPegawai); ?>
     <br>
     <br><br>
     <form method="post">
