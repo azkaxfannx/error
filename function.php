@@ -306,13 +306,13 @@
         }
 
         public static function ubahDataPegawai($listDBPegawai) {
+            $dataPegawai = null;
+            $posisiData = 0;
+
             if(isset($_POST['ubahDataPegawai']) && isset($_SESSION['selectedNIK'])) {
                 $selectedNIK = $_SESSION['selectedNIK'];
                 $database = $listDBPegawai . $_SESSION['selectedDatabase'];
                 $file = fopen($database, 'r+');
-                
-                $dataPegawai = null;
-                $posisiData = 0;
 
                 while (!feof($file)) {
                     $db = trim(fgets($file));
@@ -366,36 +366,38 @@
                         echo "<button type='submit' name='submitUbahDataPegawai'>Ubah Data Pegawai!</button>";
                     echo "</form>";
                 }
-                if(isset($_POST['submitUbahDataPegawai'])) {
-                    echo "<script>alert('Data pegawai berhasil diubah!')</script>";
+            }
+            if(isset($_POST['submitUbahDataPegawai']) && isset($_SESSION['selectedNIK'])) {
+                echo "<script>alert('Data pegawai berhasil diubah!')</script>";
+                $selectedNIK = $_SESSION['selectedNIK'];
+                $database = $listDBPegawai . $_SESSION['selectedDatabase'];
 
-                    $newNik = $_POST['nik'];
-                    $newName = $_POST['nama'];
-                    $newAlamat = $_POST['alamat'];
-                    $newUnit = $_POST['unit'];
-                    $newGolongan = $_POST['golongan'];
-                    $newJumlahAnak = $_POST['jumlahAnak'];
-                    $newMasuk = $_POST['masuk'];
-                    $newJamKerja = $_POST['jamKerja'];
+                $newNik = $_POST['nik'];
+                $newName = $_POST['nama'];
+                $newAlamat = $_POST['alamat'];
+                $newUnit = $_POST['unit'];
+                $newGolongan = $_POST['golongan'];
+                $newJumlahAnak = $_POST['jumlahAnak'];
+                $newMasuk = $_POST['masuk'];
+                $newJamKerja = $_POST['jamKerja'];
 
-                    $newDataPegawai = [
-                        'nik' => $newNik,
-                        'nama' => $newName,
-                        'alamat' => $newAlamat,
-                        'unit' => $newUnit,
-                        'golongan' => $newGolongan,
-                        'jumlahAnak' => $newJumlahAnak,
-                        'masuk' => $newMasuk,
-                        'jamKerja' => $newJamKerja,
-                    ];
+                $newDataPegawai = [
+                    'nik' => $newNik,
+                    'nama' => $newName,
+                    'alamat' => $newAlamat,
+                    'unit' => $newUnit,
+                    'golongan' => $newGolongan,
+                    'jumlahAnak' => $newJumlahAnak,
+                    'masuk' => $newMasuk,
+                    'jamKerja' => $newJamKerja,
+                ];
 
-                    $newDataCSV = implode(',', $newDataPegawai);
+                $newDataCSV = implode(',', $newDataPegawai);
 
-                    $file = fopen($database, 'r+');
-                    fseek($file, $posisiData);
-                    fwrite($file, $newDataCSV . PHP_EOL);
-                    fclose($file);
-                }
+                $file = fopen($database, 'r+');
+                fseek($file, $posisiData);
+                fwrite($file, $newDataCSV . PHP_EOL);
+                fclose($file);
             }
         }
     }
