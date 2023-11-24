@@ -27,8 +27,11 @@
         }
 
         public static function tampilDBPegawai($listDBPegawai) {
-            if(isset($_POST['submitPilihanDB'])) {
-                $_SESSION['selectedDatabase'] = $_POST['pilihDatabase'];
+            if (isset($_POST["submitPilihanDB"]) && isset($_POST['pilihDatabase'])) {
+               $_SESSION['selectedDatabase'] = $_POST['pilihDatabase'];
+            }
+            
+            if(isset($_SESSION['selectedDatabase'])) {                
                 $file = $listDBPegawai . $_SESSION['selectedDatabase'];
             
                     if($file) {
@@ -50,20 +53,28 @@
             
                         if(!$isEmpty) {
                             foreach($arrData as $isiDB) {
-                                $_SESSION['status'] = "$isiDB<br>";
-                                echo $_SESSION['status'];
+                                if(!empty($isiDB)) {
+                                    $dataPegawai = explode(',', $isiDB);
+                                    $_SESSION['status'] = $dataPegawai[0] . ', ' . $dataPegawai[1] . ', ' . $dataPegawai[3];
+                                    $_SESSION['selectedNIK'] = $dataPegawai[0];
+                                    echo "<form method='post'>";
+                                    echo $_SESSION['status'] . ' ';
+                                    echo "<button type='submit' name='hapusDataPegawai'>Hapus Data Pegawai</button>" . ' ';
+                                    echo "<button type='submit' name='ubahDataPegawai'>Ubah Data Pegawai</button>" . ' ';
+                                    echo "<button type='submit' name='detailDataPegawai'>Detail Data Pegawai</button>";
+                                    echo "</form>";
+                                    echo "<br>";
+                                }
                             }
                         } else {
                             $_SESSION['status'] = 'Database masih kosong!';
                             echo $_SESSION['status'];
                         }
+                    } else {
+                        echo 'Database belum dipilih!';
                     }
             } else {
-                if(isset($_SESSION['status'])) {
-                    echo $_SESSION['status'];
-                } else {
-                    echo 'Database belum dipilih!';
-                }
+                echo 'Database belum dipilih!';
             }
         }
 
@@ -182,6 +193,7 @@
     class Fiture {
         public static function balikDashboard() {
             if(isset($_POST['balikDashboard'])) {
+                unset($_SESSION['selectedDatabase'], $_SESSION['status'], $_SESSION['selectedNIK']);
                 header('Location: ./dashboard.php');
                 die();
             }
@@ -191,17 +203,20 @@
     class Pegawai {
         public static function validasiTambahDataPegawai($listDBPegawai) {
             if (isset($_POST['submitDataPegawai'])) {
-                $_SESSION['status'] = $_POST['status'];
                 $tampilForm = false;
-        
-                if (!empty($_POST['golongan']) && !empty(array_filter($_POST))) {
-                    echo "<script>alert('Data pegawai berhasil dikirim!')</script>";
-        
-                    self::tambahDataPegawai($listDBPegawai);
+                
+                if(isset($_SESSION['selectedDatabase'])) {
+                    if (!empty($_POST['golongan']) && !empty(array_filter($_POST))) {
+                        self::tambahDataPegawai($listDBPegawai);
+    
+                        echo "<script>alert('Data pegawai berhasil dikirim!')</script>";
 
-                    unset($_SESSION['selectedDatabase'], $_SESSION['keterangan']);
+                        unset($_SESSION['selectedDatabase'], $_SESSION['status']);
+                    } else {
+                        echo "<script>alert('Gagal! Ada data yang belum diisi!')</script>";
+                    }
                 } else {
-                    echo "<script>alert('Gagal! Ada data yang belum diisi!')</script>";
+                    echo "<script>alert('Database belum dipilih!')</script>";
                 }
             }
         }
@@ -209,13 +224,150 @@
         public static function tambahDataPegawai($listDBPegawai) {
             $database = $listDBPegawai . $_SESSION['selectedDatabase'];
         
+            $nik = $_POST['nik'];
+            $nama = $_POST['nama'];
+            $alamat = $_POST['alamat'];
+            $unit = $_POST['unit'];
+            $golongan = $_POST['golongan'];
+            $jumlahAnak = $_POST['jumlahAnak'];
+            $masuk = $_POST['masuk'];
+            $jamKerja = $_POST['jamKerja'];
+
+            $dataPegawai = [
+                'nik' => $nik,
+                'nama' => $nama,
+                'alamat' => $alamat,
+                'unit' => $unit,
+                'golongan' => $golongan,
+                'jumlahAnak' => $jumlahAnak,
+                'masuk' => $masuk,
+                'jamKerja' => $jamKerja,
+            ];
+
+            $pegawaiCSV = implode(',', $dataPegawai);
+
             $simpan = fopen($database, 'a');
         
-            fwrite($simpan, $_POST['nik'] . ',' . $_POST['nama'] . ',' 
-            . $_POST['alamat'] . ',' . $_POST['unit'] . ',' . $_POST['golongan'] 
-            . ',' . $_POST['jumlahAnak'] . ',' . $_POST['masuk'] . ',' . $_POST['jamKerja'] . PHP_EOL);
+            fwrite($simpan, $pegawaiCSV . PHP_EOL);
 
             fclose($simpan);
+        }
+
+        public static function hapusDataPegawai($listDBPegawai) {
+            if(isset($_POST['hapusDataPegawai']) && isset($_SESSION['selectedNIK'])) {
+                echo "<script>alert('Data pegawai berhasil dihapus!')</script>";
+
+                $database = $listDBPegawai . $_SESSION['selectedDatabase'];
+                
+                $selectedNIK = $_SESSION['selectedNIK'];
+
+                $path = file($database);
+
+                $file = fopen($database, 'w');
+
+                foreach($path as $db) {
+                    $dataPegawai = explode(',', $db);
+
+                    if($dataPegawai[0] != $selectedNIK) {
+                        fwrite($file, $db);
+                    }
+                }
+                fclose($file);
+            }
+        }
+
+        public static function ubahDataPegawai($listDBPegawai) {
+            if(isset($_POST['ubahDataPegawai']) && isset($_SESSION['selectedNIK'])) {
+                $selectedNIK = $_SESSION['selectedNIK'];
+                $database = $listDBPegawai . $_SESSION['selectedDatabase'];
+                $path = file($database);
+                
+                $dataPegawai = null;
+                foreach($path as $db) {
+                    $pegawai = explode(',', $db);
+                    if($pegawai[0] == $selectedNIK) {
+                        $dataPegawai = $pegawai;
+                        break;
+                    }
+                }
+                if($dataPegawai) {
+                    echo "<form method='post'>";
+                        echo "<input type='number' name='nik' placeholder='NIK' value='$dataPegawai[0]' required>";
+                        echo "<br><br>";
+                        echo "<input type='text' name='nama' placeholder='Nama' value='$dataPegawai[1]' required>";
+                        echo "<br><br>";
+                        echo "<textarea name='alamat' cols='30' rows='10' placeholder='Alamat' required>$dataPegawai[2]</textarea>";
+                        echo "<br><br>";
+                        echo "<input type='text' name='unit' placeholder='Unit' value='$dataPegawai[3]' required>";
+                        echo "<br><br>";
+                        echo "<label>Golongan</label>";
+                        echo "<br>";
+                        echo "<input type='radio' name='golongan' value='IV-A'" . ($dataPegawai[4] == 'IV-A' ? 'checked' : '') . ">";
+                        echo "<label for='IV-A'>IV-A</label>";
+                        echo "<br>";
+                        echo "<input type='radio' name='golongan' value='IV-A'" . ($dataPegawai[4] == 'IV-B' ? 'checked' : '') . ">";
+                        echo "<label for='IV-B'>IV-B</label>";
+                        echo "<br>";
+                        echo "<input type='radio' name='golongan' value='IV-A'" . ($dataPegawai[4] == 'IV-C' ? 'checked' : '') . ">";
+                        echo "<label for='IV-C'>IV-C</label>";
+                        echo "<br>";
+                        echo "<input type='radio' name='golongan' value='IV-A'" . ($dataPegawai[4] == 'III-A' ? 'checked' : '') . ">";
+                        echo "<label for='III-A'>III-A</label>";
+                        echo "<br>";
+                        echo "<input type='radio' name='golongan' value='IV-A'" . ($dataPegawai[4] == 'III-B' ? 'checked' : '') . ">";
+                        echo "<label for='III-B'>III-B</label>";
+                        echo "<br>";
+                        echo "<input type='radio' name='golongan' value='IV-A'" . ($dataPegawai[4] == 'III-C' ? 'checked' : '') . ">";
+                        echo "<label for='III-C'>III-C</label>";
+                        echo "<br><br>";
+                        echo "<input type='number' name='jumlahAnak' placeholder='Jumlah Anak' value='$dataPegawai[5]' required>";
+                        echo "<br><br>";
+                        echo "<input type='number' name='masuk' placeholder='Masuk (Hari)' value='$dataPegawai[6]' required>";
+                        echo "<br><br>";
+                        echo "<input type='number' name='jamKerja' placeholder='Jam Kerja' value='$dataPegawai[7]' required>";
+                        echo "<br><br>";
+                        echo "<button type='submit' name='submitUbahDataPegawai'>Ubah Data Pegawai!</button>";
+                    echo "</form>";
+                }
+                if(isset($_POST['submitUbahDataPegawai'])) {
+                    $newNik = $_POST['nik'];
+                    $newName = $_POST['nama'];
+                    $newAlamat = $_POST['alamat'];
+                    $newUnit = $_POST['unit'];
+                    $newGolongan = $_POST['golongan'];
+                    $newJumlahAnak = $_POST['jumlahAnak'];
+                    $newMasuk = $_POST['masuk'];
+                    $newJamKerja = $_POST['jamKerja'];
+
+                    $newDataPegawai = [
+                        'nik' => $newNik,
+                        'nama' => $newName,
+                        'alamat' => $newAlamat,
+                        'unit' => $newUnit,
+                        'golongan' => $newGolongan,
+                        'jumlahAnak' => $newJumlahAnak,
+                        'masuk' => $newMasuk,
+                        'jamKerja' => $newJamKerja,
+                    ];
+
+                    $newDataCSV = implode(',', $newDataPegawai);
+
+                    $file = fopen($database, 'r+');
+
+                    $posisiData = 0;
+                    foreach($path as $index => $db) {
+                        if(strpos($db, $selectedNIK) === 0) {
+                            $posisiData = $index;
+                            break;
+                        }
+                    }
+                    fseek($file, $posisiData);
+                    fwrite($file, $newDataCSV . PHP_EOL);
+                    fclose($file);
+
+                    echo "<script>alert('Data pegawai berhasil diubah!')</script>";
+                }
+            }
         }
     }
 ?>
