@@ -56,12 +56,12 @@
                                 if(!empty($isiDB)) {
                                     $dataPegawai = explode(',', $isiDB);
                                     $_SESSION['status'] = $dataPegawai[0] . ', ' . $dataPegawai[1] . ', ' . $dataPegawai[3];
-                                    $_SESSION['selectedNIK'] = $dataPegawai[0];
                                     echo "<form method='post'>";
                                     echo $_SESSION['status'] . ' ';
-                                    echo "<button type='submit' name='hapusDataPegawai'>Hapus Data Pegawai</button>" . ' ';
-                                    echo "<button type='submit' name='ubahDataPegawai'>Ubah Data Pegawai</button>" . ' ';
-                                    echo "<button type='submit' name='detailDataPegawai'>Detail Data Pegawai</button>";
+                                    echo "<input type='hidden' name='selectedNIK' value='" . $dataPegawai[0] ."'>";
+                                    echo "<button type='submit' name='hapusDataPegawai' data-nik=''>Hapus Data Pegawai</button>" . ' ';
+                                    echo "<button type='submit' name='ubahDataPegawai' data-nik=''>Ubah Data Pegawai</button>" . ' ';
+                                    echo "<button type='submit' name='detailDataPegawai' data-nik=''>Detail Data Pegawai</button>" . ' ';
                                     echo "</form>";
                                     echo "<br>";
                                 }
@@ -237,7 +237,7 @@
             
                                 echo "<script>alert('Data pegawai berhasil dikirim!')</script>";
 
-                                unset($_SESSION['selectedDatabase'], $_SESSION['status']);
+                                unset($_SESSION['selectedDatabase'], $_SESSION['status'], $_SESSION['selectedNIK']);
                             } else {
                                 echo "<script>alert('Gagal! Ada data yang belum diisi!')</script>";
                             }
@@ -283,7 +283,8 @@
         }
 
         public static function hapusDataPegawai($listDBPegawai) {
-            if(isset($_POST['hapusDataPegawai']) && isset($_SESSION['selectedNIK'])) {
+            if(isset($_POST['hapusDataPegawai'])) {
+                $_SESSION['selectedNIK'] = $_POST['selectedNIK'];
                 echo "<script>alert('Data pegawai berhasil dihapus!')</script>";
 
                 $database = $listDBPegawai . $_SESSION['selectedDatabase'];
@@ -302,26 +303,33 @@
                     }
                 }
                 fclose($file);
+                unset($_SESSION['selectedNIK']);
             }
         }
 
         public static function ubahDataPegawai($listDBPegawai) {
             $dataPegawai = null;
             $posisiData = 0;
+            $data = [];
 
-            if(isset($_POST['ubahDataPegawai']) && isset($_SESSION['selectedNIK'])) {
+            if(isset($_POST['ubahDataPegawai'])) {
+                $_SESSION['selectedNIK'] = $_POST['selectedNIK'];
                 $selectedNIK = $_SESSION['selectedNIK'];
                 $database = $listDBPegawai . $_SESSION['selectedDatabase'];
                 $file = fopen($database, 'r+');
 
                 while (!feof($file)) {
                     $db = trim(fgets($file));
-                    $pegawai = explode(',', $db);
+                    if(!empty($db)) {
+                        $pegawai = explode(',', $db);
         
-                    if ($pegawai[0] == $selectedNIK) {
-                        $dataPegawai = $pegawai;
-                        $posisiData = ftell($file);
-                        break;
+                        if ($pegawai[0] == $selectedNIK) {
+                            $dataPegawai = $pegawai;
+                            $posisiData = ftell($file);
+                            break;
+                        } else {
+                            $data[] = $db;
+                        }
                     }
                 }
 
@@ -367,11 +375,10 @@
                     echo "</form>";
                 }
             }
-            if(isset($_POST['submitUbahDataPegawai']) && isset($_SESSION['selectedNIK'])) {
+            if(isset($_POST['submitUbahDataPegawai'])) {
                 echo "<script>alert('Data pegawai berhasil diubah!')</script>";
-                $selectedNIK = $_SESSION['selectedNIK'];
-                $database = $listDBPegawai . $_SESSION['selectedDatabase'];
 
+                $database = $listDBPegawai . $_SESSION['selectedDatabase'];
                 $newNik = $_POST['nik'];
                 $newName = $_POST['nama'];
                 $newAlamat = $_POST['alamat'];
@@ -394,10 +401,11 @@
 
                 $newDataCSV = implode(',', $newDataPegawai);
 
-                $file = fopen($database, 'r+');
+                $file = fopen($database, 'w');
                 fseek($file, $posisiData);
                 fwrite($file, $newDataCSV . PHP_EOL);
                 fclose($file);
+                unset($_SESSION['selectedNIK']);
             }
         }
     }
