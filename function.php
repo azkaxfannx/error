@@ -310,13 +310,12 @@
         public static function ubahDataPegawai($listDBPegawai) {
             $dataPegawai = null;
             $posisiData = 0;
-            $data = [];
 
             if(isset($_POST['ubahDataPegawai'])) {
                 $_SESSION['selectedNIK'] = $_POST['selectedNIK'];
                 $selectedNIK = $_SESSION['selectedNIK'];
                 $database = $listDBPegawai . $_SESSION['selectedDatabase'];
-                $file = fopen($database, 'r+');
+                $file = fopen($database, 'r');
 
                 while (!feof($file)) {
                     $db = trim(fgets($file));
@@ -325,10 +324,7 @@
         
                         if ($pegawai[0] == $selectedNIK) {
                             $dataPegawai = $pegawai;
-                            $posisiData = ftell($file);
                             break;
-                        } else {
-                            $data[] = $db;
                         }
                     }
                 }
@@ -376,9 +372,12 @@
                 }
             }
             if(isset($_POST['submitUbahDataPegawai'])) {
+                $selectedNIK = $_SESSION['selectedNIK'];
+
                 echo "<script>alert('Data pegawai berhasil diubah!')</script>";
 
                 $database = $listDBPegawai . $_SESSION['selectedDatabase'];
+
                 $newNik = $_POST['nik'];
                 $newName = $_POST['nama'];
                 $newAlamat = $_POST['alamat'];
@@ -401,7 +400,19 @@
 
                 $newDataCSV = implode(',', $newDataPegawai);
 
-                $file = fopen($database, 'w');
+                $file = fopen($database, 'r+');
+
+                while (!feof($file)) {
+                    $db = trim(fgets($file));
+                    if(!empty($db)) {
+                        $pegawai = explode(',', $db);
+        
+                        if ($pegawai[0] == $selectedNIK) {
+                            $posisiData = ftell($file);
+                            break;
+                        }
+                    }
+                }
                 fseek($file, $posisiData);
                 fwrite($file, $newDataCSV . PHP_EOL);
                 fclose($file);
